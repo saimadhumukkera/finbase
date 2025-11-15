@@ -1,0 +1,501 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>State GDP Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background-color: #111315;
+      color: #e5e5e5;
+    }
+    .container {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .sidebar {
+      width: 220px;
+      background-color: #1c1f22;
+      padding: 20px;
+      overflow-y: auto;
+      scrollbar-width: none;
+      flex-shrink: 0;
+    }
+    .sidebar::-webkit-scrollbar {
+      display: none;
+    }
+    .sidebar h2 {
+      font-size: 1.2rem;
+      margin-bottom: 20px;
+      color: #fff;
+    }
+    .state-btn {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 10px;
+      background-color: #2b2f33;
+      border: none;
+      color: #e5e5e5;
+      border-radius: 12px;
+      cursor: pointer;
+      text-align: center;
+      transition: background-color 0.2s;
+      white-space: nowrap;
+    }
+    .state-btn:hover {
+      background-color: #393e44;
+    }
+    .main {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    .stats-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+    .card, .chart-container {
+      background-color: #1c1f22;
+      padding: 20px;
+      border-radius: 16px;
+      flex: 1;
+      text-align: center;
+    }
+    canvas {
+      border-radius: 16px;
+      background-color: #1c1f22;
+    }
+    .chart-row {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .chart-container {
+      flex: 1 1 48%;
+      height: 600px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .chart-container canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="sidebar" id="sidebar">
+      <h2>States</h2>
+    </div>
+    <div class="main">
+      <div class="stats-grid">
+        <div class="card" id="growthCard">Growth Rate: </div>
+        <div class="card" id="gsdpCard">GSDP: </div>
+        <div class="card" id="pciCard">Per Capita Income: </div>
+      </div>
+      <div class="chart-row">
+        <div class="chart-container">
+          <canvas id="barChart"></canvas>
+        </div>
+        <div class="chart-container">
+          <canvas id="pieChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="rawData.js"></script>
+  <script>
+    const years = ["2019", "2020", "2021", "2022", "2023", "2024"];
+
+    const barCtx = document.getElementById("barChart").getContext("2d");
+    const pieCtx = document.getElementById("pieChart").getContext("2d");
+
+    let barChart = new Chart(barCtx, {
+      type: "bar",
+      data: {
+        labels: years,
+        datasets: [{
+          label: "GSDP (in ₹ Lakh Cr)",
+          data: [],
+          backgroundColor: "#8b6eff",
+          borderRadius: 10,
+          barThickness: 60
+        }]
+      },
+      options: {
+        animation: {
+          duration: 1500,
+          easing: 'easeInOutQuart'
+        },
+        plugins: {
+          legend: { labels: { color: "#fff", font: { size: 14 } } },
+          tooltip: {
+            enabled: true,
+            backgroundColor: '#222',
+            titleColor: '#fff',
+            bodyColor: '#fff',
+            cornerRadius: 8,
+            callbacks: {
+              label: function(context) {
+                return ` ₹${(context.raw * 1e5).toLocaleString()} Cr`;
+              }
+            }
+          }
+        },
+        layout: {
+          padding: 30
+        },
+        scales: {
+          x: { ticks: { color: "#aaa", font: { size: 14 } } },
+          y: { ticks: { color: "#aaa", font: { size: 14 } } }
+        }
+      }
+    });
+
+    let pieChart = new Chart(pieCtx, {
+      type: "doughnut",
+      data: {
+        labels: ["Primary", "Secondary", "Tertiary"],
+        datasets: [{
+          data: [],
+          backgroundColor: ["#7166F0", "#A68DFF", "#C8BFFF"],
+          borderWidth: 2
+        }]
+      },
+      options: {
+        animation: {
+          duration: 1500,
+          easing: 'easeInOutQuart'
+        },
+        plugins: {
+          legend: {
+            labels: {
+              color: "#fff",
+              font: { size: 14 },
+              boxWidth: 20,
+              padding: 20
+            }
+          },
+          tooltip: {
+            backgroundColor: '#222',
+            titleColor: '#fff',
+            bodyColor: '#fff',
+            cornerRadius: 8
+          }
+        },
+        maintainAspectRatio: false,
+        layout: {
+          padding: 30
+        }
+      }
+    });
+
+    function updateState(state) {
+      const data = rawData[state];
+      barChart.data.datasets[0].data = data.gsdp;
+      barChart.update();
+
+      pieChart.data.datasets[0].data = data.sector;
+      pieChart.update();
+
+      document.getElementById("gsdpCard").innerText = `GSDP: ₹${(data.gsdp.at(-1) * 1e5).toLocaleString()} Cr`;
+      document.getElementById("pciCard").innerText = `Per Capita Income: ₹${data.pci.at(-1).toLocaleString()}`;
+      document.getElementById("growthCard").innerText = `Growth Rate: ${data.growth.at(-1)}%`;
+    }
+
+    const sidebar = document.getElementById("sidebar");
+    Object.keys(rawData).forEach(state => {
+      const btn = document.createElement("button");
+      btn.className = "state-btn";
+      btn.innerText = state;
+      btn.onclick = () => updateState(state);
+      sidebar.appendChild(btn);
+    });
+
+    updateState(Object.keys(rawData)[0]);
+  </script>
+</body>
+</html> -->
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>State GDP Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background-color: #111315;
+      color: #e5e5e5;
+    }
+    .container {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .sidebar {
+      width: 220px;
+      background-color: #1c1f22;
+      padding: 20px;
+      overflow-y: auto;
+      scrollbar-width: none;
+      flex-shrink: 0;
+    }
+    .sidebar::-webkit-scrollbar {
+      display: none;
+    }
+    .sidebar h2 {
+      font-size: 1.2rem;
+      margin-bottom: 20px;
+      color: #fff;
+    }
+    .state-btn {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 10px;
+      background-color: #2b2f33;
+      border: none;
+      color: #e5e5e5;
+      border-radius: 12px;
+      cursor: pointer;
+      text-align: center;
+      transition: background-color 0.2s;
+      white-space: nowrap;
+    }
+    .state-btn:hover {
+      background-color: #393e44;
+    }
+    .main {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    .top-section {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+    .stats-grid {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 20px;
+      flex: 1;
+    }
+    .card, .chart-container {
+      background-color: #1c1f22;
+      padding: 20px;
+      border-radius: 16px;
+      text-align: center;
+      animation: fadeIn 1s ease-in-out;
+    }
+    .chart-container {
+      height: 300px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+    }
+    .full-width-chart {
+      width: 100%;
+      height: 600px;
+      margin-top: 20px;
+      background-color: #1c1f22;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+    }
+    .card span {
+      display: inline-block;
+      opacity: 0;
+      transform: translateY(10px);
+      animation: slideUp 0.6s ease-out forwards;
+    }
+    .card span:nth-child(1) { animation-delay: 0.1s; }
+    .card span:nth-child(2) { animation-delay: 0.3s; }
+    .card span:nth-child(3) { animation-delay: 0.5s; }
+
+    @keyframes slideUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    canvas {
+      border-radius: 16px;
+      background-color: #1c1f22;
+    }
+    .chart-container canvas,
+    .full-width-chart canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="sidebar" id="sidebar">
+      <h2>States</h2>
+    </div>
+    <div class="main">
+      <div class="top-section">
+        <div class="stats-grid">
+          <div class="card" id="growthCard"><span>Growth Rate: </span></div>
+          <div class="card" id="gsdpCard"><span>GSDP: </span></div>
+          <div class="card" id="pciCard"><span>Per Capita Income: </span></div>
+        </div>
+        <div class="chart-container">
+          <canvas id="pieChart"></canvas>
+        </div>
+      </div>
+      <div class="full-width-chart">
+        <canvas id="barChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="rawData.js"></script>
+  <script>
+    const years = ["2019", "2020", "2021", "2022", "2023", "2024"];
+    const barCtx = document.getElementById("barChart").getContext("2d");
+    const pieCtx = document.getElementById("pieChart").getContext("2d");
+
+    let barChart = new Chart(barCtx, {
+      type: "bar",
+      data: {
+        labels: years,
+        datasets: [{
+          label: "GSDP (in ₹ Lakh Cr)",
+          data: [],
+          backgroundColor: "#8b6eff",
+          borderRadius: 10,
+          barThickness: 60
+        }]
+      },
+      options: {
+        animation: {
+          duration: 1500,
+          easing: 'easeInOutQuart'
+        },
+        plugins: {
+          legend: { labels: { color: "#fff", font: { size: 14 } } },
+          tooltip: {
+            enabled: true,
+            backgroundColor: '#222',
+            titleColor: '#fff',
+            bodyColor: '#fff',
+            cornerRadius: 8,
+            callbacks: {
+              label: function(context) {
+                return ` ₹${(context.raw * 1e5).toLocaleString()} Cr`;
+              }
+            }
+          }
+        },
+        layout: {
+          padding: 30
+        },
+        scales: {
+          x: { ticks: { color: "#aaa", font: { size: 14 } } },
+          y: { ticks: { color: "#aaa", font: { size: 14 } } }
+        }
+      }
+    });
+
+    let pieChart = new Chart(pieCtx, {
+      type: "doughnut",
+      data: {
+        labels: ["Primary", "Secondary", "Tertiary"],
+        datasets: [{
+          data: [],
+          backgroundColor: ["#7166F0", "#A68DFF", "#C8BFFF"],
+          borderWidth: 2
+        }]
+      },
+      options: {
+        animation: {
+          duration: 1500,
+          easing: 'easeInOutQuart'
+        },
+        plugins: {
+          legend: {
+            labels: {
+              color: "#fff",
+              font: { size: 14 },
+              boxWidth: 20,
+              padding: 20
+            }
+          },
+          tooltip: {
+            backgroundColor: '#222',
+            titleColor: '#fff',
+            bodyColor: '#fff',
+            cornerRadius: 8
+          }
+        },
+        maintainAspectRatio: false,
+        layout: {
+          padding: 30
+        }
+      }
+    });
+
+    function updateState(state) {
+      const data = rawData[state];
+      barChart.data.datasets[0].data = data.gsdp;
+      barChart.update();
+
+      pieChart.data.datasets[0].data = data.sector;
+      pieChart.update();
+
+      document.getElementById("gsdpCard").innerHTML = `<span>GSDP: ₹${(data.gsdp.at(-1) * 1e5).toLocaleString()} Cr</span>`;
+      document.getElementById("pciCard").innerHTML = `<span>Per Capita Income: ₹${data.pci.at(-1).toLocaleString()}</span>`;
+      document.getElementById("growthCard").innerHTML = `<span>Growth Rate: ${data.growth.at(-1)}%</span>`;
+    }
+
+    const sidebar = document.getElementById("sidebar");
+    Object.keys(rawData).forEach(state => {
+      const btn = document.createElement("button");
+      btn.className = "state-btn";
+      btn.innerText = state;
+      btn.onclick = () => updateState(state);
+      sidebar.appendChild(btn);
+    });
+
+    updateState(Object.keys(rawData)[0]);
+  </script>
+</body>
+</html>
+
+ 
+ 
+
+
+ 
+

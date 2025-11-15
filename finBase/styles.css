@@ -1,0 +1,91 @@
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background: #0e1015;
+  color: #e4e6eb;
+  display: flex;
+  height: 100vh;
+}
+
+.sidebar {
+  width: 240px;
+  background: #161b22;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.sidebar h2 {
+  color: white;
+  font-size: 20px;
+  margin-bottom: 15px;
+}
+
+#stateList {
+  list-style: none;
+  padding: 0;
+}
+
+#stateList li {
+  padding: 10px 15px;
+  margin-bottom: 10px;
+  background: #1e222a;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.3s;
+  color: #b6c1d1;
+}
+
+#stateList li:hover {
+  background: #2a2f3a;
+  color: #fff;
+}
+
+main {
+  flex: 1;
+  padding: 30px;
+  overflow-y: auto;
+}
+
+h1 {
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+.cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.card {
+  background: #1c1f26;
+  padding: 16px 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  flex: 1 1 200px;
+  color: #cbd5e1;
+}
+
+.charts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.chart-container {
+  flex: 1 1 48%;
+  background: #1c1f26;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
+@media (max-width: 768px) {
+  .charts {
+    flex-direction: column;
+  }
+  .chart-container {
+    flex: 1 1 100%;
+  }
+}
